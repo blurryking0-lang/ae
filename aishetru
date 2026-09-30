@@ -1,0 +1,740 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+
+local player = Players.LocalPlayer
+
+local Config = {
+    Enabled = false,
+    Speed = 100
+}
+
+local WORK_SHIRT_ID = "rbxassetid://10434401964"
+local WORK_PANTS_ID = "rbxassetid://10434420692"
+local DEFAULT_MAKIMA_CFRAME = CFrame.new(1100.19, 113.74, -514.46)
+
+-- // ==========================================
+-- // UI CREATION (Clean & Minimalist)
+-- // ==========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "OdetariPatientFarmer"
+screenGui.ResetOnSpawn = false
+pcall(function()
+    screenGui.Parent = CoreGui
+end)
+if not screenGui.Parent then
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+end
+
+local EXPANDED_SIZE = UDim2.new(0, 190, 0, 125)
+local MINIMIZED_SIZE = UDim2.new(0, 190, 0, 32)
+local isMinimized = false
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = EXPANDED_SIZE
+mainFrame.Position = UDim2.new(0.02, 0, 0.4, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 8)
+mainCorner.Parent = mainFrame
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(45, 45, 55)
+mainStroke.Thickness = 1
+mainStroke.Parent = mainFrame
+
+-- Topbar / Title Bar
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.Size = UDim2.new(1, 0, 0, 32)
+topBar.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+topBar.BorderSizePixel = 0
+topBar.Parent = mainFrame
+
+local topCorner = Instance.new("UICorner")
+topCorner.CornerRadius = UDim.new(0, 8)
+topCorner.Parent = topBar
+
+-- Fix corner bleed for topbar
+local topCover = Instance.new("Frame")
+topCover.Size = UDim2.new(1, 0, 0, 6)
+topCover.Position = UDim2.new(0, 0, 1, -6)
+topCover.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+topCover.BorderSizePixel = 0
+topCover.Parent = topBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -38, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Made by Odetari"
+titleLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+titleLabel.TextSize = 11
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = topBar
+
+local minButton = Instance.new("TextButton")
+minButton.Name = "MinButton"
+minButton.Size = UDim2.new(0, 22, 0, 22)
+minButton.Position = UDim2.new(1, -27, 0, 5)
+minButton.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+minButton.Text = "−"
+minButton.TextColor3 = Color3.fromRGB(200, 200, 210)
+minButton.TextSize = 13
+minButton.Font = Enum.Font.GothamBold
+minButton.BorderSizePixel = 0
+minButton.Parent = topBar
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 5)
+minCorner.Parent = minButton
+
+-- Content Container
+local content = Instance.new("Frame")
+content.Name = "Content"
+content.Size = UDim2.new(1, -16, 1, -40)
+content.Position = UDim2.new(0, 8, 0, 36)
+content.BackgroundTransparency = 1
+content.Parent = mainFrame
+
+-- Toggle Button
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Size = UDim2.new(1, 0, 0, 36)
+toggleButton.Position = UDim2.new(0, 0, 0, 4)
+toggleButton.BackgroundColor3 = Color3.fromRGB(190, 45, 45)
+toggleButton.Text = "Status: OFF"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextSize = 11
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.BorderSizePixel = 0
+toggleButton.Parent = content
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 6)
+toggleCorner.Parent = toggleButton
+
+-- Speed Box Container
+local speedFrame = Instance.new("Frame")
+speedFrame.Name = "SpeedFrame"
+speedFrame.Size = UDim2.new(1, 0, 0, 34)
+speedFrame.Position = UDim2.new(0, 0, 0, 46)
+speedFrame.BackgroundColor3 = Color3.fromRGB(26, 26, 32)
+speedFrame.BorderSizePixel = 0
+speedFrame.Parent = content
+
+local speedCorner = Instance.new("UICorner")
+speedCorner.CornerRadius = UDim.new(0, 6)
+speedCorner.Parent = speedFrame
+
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(0.5, 0, 1, 0)
+speedLabel.Position = UDim2.new(0, 10, 0, 0)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Fly Speed"
+speedLabel.TextColor3 = Color3.fromRGB(160, 160, 175)
+speedLabel.TextSize = 10
+speedLabel.Font = Enum.Font.GothamSemibold
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.Parent = speedFrame
+
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.new(0.4, -10, 0.7, 0)
+speedBox.Position = UDim2.new(0.6, 0, 0.15, 0)
+speedBox.BackgroundColor3 = Color3.fromRGB(35, 35, 44)
+speedBox.Text = tostring(Config.Speed)
+speedBox.PlaceholderText = "100"
+speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBox.TextSize = 10
+speedBox.Font = Enum.Font.GothamBold
+speedBox.ClearTextOnFocus = false
+speedBox.BorderSizePixel = 0
+speedBox.Parent = speedFrame
+
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0, 4)
+boxCorner.Parent = speedBox
+
+-- // ==========================================
+-- // UI INTERACTIONS & LOGIC
+-- // ==========================================
+local savedMakimaCFrame = nil
+local needsJobClaim = false
+local atAtmDepositing = false
+
+-- Minimize Function
+minButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    local targetSize = isMinimized and MINIMIZED_SIZE or EXPANDED_SIZE
+    minButton.Text = isMinimized and "+" or "−"
+    TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Size = targetSize
+    }):Play()
+end)
+
+speedBox.FocusLost:Connect(function()
+    local val = tonumber(speedBox.Text)
+    if val and val > 0 then
+        Config.Speed = val
+    else
+        speedBox.Text = tostring(Config.Speed)
+    end
+end)
+
+toggleButton.MouseButton1Click:Connect(function()
+    Config.Enabled = not Config.Enabled
+    if Config.Enabled then
+        toggleButton.Text = "Status: ON"
+        TweenService:Create(toggleButton, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(45, 170, 75)
+        }):Play()
+        needsJobClaim = false
+        atAtmDepositing = false
+    else
+        toggleButton.Text = "Status: OFF"
+        TweenService:Create(toggleButton, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(190, 45, 45)
+        }):Play()
+        needsJobClaim = false
+        atAtmDepositing = false
+        if player.Character then
+            for _, part in ipairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end
+end)
+
+-- // ==========================================
+-- // GAME AUTOMATION FUNCTIONS
+-- // ==========================================
+local function safeClick(btn)
+    if not btn then return false end
+    local triggered = false
+
+    if firesignal then
+        pcall(function()
+            firesignal(btn.MouseButton1Click)
+            triggered = true
+        end)
+        pcall(function()
+            firesignal(btn.Activated)
+        end)
+    end
+
+    if getconnections then
+        pcall(function()
+            for _, c in ipairs(getconnections(btn.MouseButton1Click)) do
+                if c.Enabled then
+                    c:Fire()
+                    triggered = true
+                end
+            end
+            for _, c in ipairs(getconnections(btn.Activated)) do
+                if c.Enabled then
+                    c:Fire()
+                    triggered = true
+                end
+            end
+        end)
+    end
+
+    if not triggered and mouse1click then
+        pcall(function()
+            local pos = btn.AbsolutePosition
+            local size = btn.AbsoluteSize
+            mouse1click(pos.X + size.X / 2, pos.Y + size.Y / 2)
+            triggered = true
+        end)
+    end
+
+    pcall(function()
+        local pos = btn.AbsolutePosition
+        local size = btn.AbsoluteSize
+        VirtualInputManager:SendMouseButtonEvent(pos.X + size.X / 2, pos.Y + size.Y / 2, 0, true, game, 0)
+        task.wait(0.02)
+        VirtualInputManager:SendMouseButtonEvent(pos.X + size.X / 2, pos.Y + size.Y / 2, 0, false, game, 0)
+    end)
+
+    return triggered
+end
+
+local function hasWorkUniform()
+    local char = player.Character
+    if not char then return false end
+    
+    if char:GetAttribute("Nurse") == true then
+        return true
+    end
+
+    local shirt = char:FindFirstChildOfClass("Shirt")
+    local pants = char:FindFirstChildOfClass("Pants")
+    
+    if shirt and shirt.ShirtTemplate == WORK_SHIRT_ID then
+        return true
+    end
+    if pants and pants.PantsTemplate == WORK_PANTS_ID then
+        return true
+    end
+    
+    return false
+end
+
+local function getBalance()
+    local success, cashObj = pcall(function()
+        return player.PlayerGui.HUD.Bars.MainHUD.Cash
+    end)
+    
+    if success and cashObj then
+        local rawText = cashObj.Text or ""
+        local cleanDigits = rawText:gsub("[^%d]", "")
+        return tonumber(cleanDigits) or 0
+    end
+    return 0
+end
+
+local function triggerInteraction(targetNpc)
+    if not targetNpc then return end
+
+    local prompt = targetNpc:FindFirstChildWhichIsA("ProximityPrompt", true)
+    if prompt and fireproximityprompt then
+        pcall(function()
+            fireproximityprompt(prompt)
+        end)
+        return
+    end
+
+    local cd = targetNpc:FindFirstChildWhichIsA("ClickDetector", true)
+    if cd and fireclickdetector then
+        pcall(function()
+            fireclickdetector(cd)
+        end)
+        return
+    end
+
+    pcall(function()
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+        task.wait(0.08)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+    end)
+end
+
+local function useCapItem()
+    local backpack = player:FindFirstChild("Backpack")
+    local char = player.Character
+    if not char then return end
+
+    local targetTool = nil
+
+    if backpack then
+        for _, item in ipairs(backpack:GetChildren()) do
+            if item:IsA("Tool") then
+                local nameLower = item.Name:lower()
+                if string.find(nameLower, "hidden") or string.find(nameLower, "cap") then
+                    targetTool = item
+                    break
+                end
+            end
+        end
+    end
+
+    if not targetTool then
+        for _, item in ipairs(char:GetChildren()) do
+            if item:IsA("Tool") then
+                local nameLower = item.Name:lower()
+                if string.find(nameLower, "hidden") or string.find(nameLower, "cap") then
+                    targetTool = item
+                    break
+                end
+            end
+        end
+    end
+
+    if targetTool then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            if targetTool.Parent ~= char then
+                humanoid:EquipTool(targetTool)
+                task.wait(0.15)
+            end
+
+            targetTool:Activate()
+            task.wait(1.5)
+            targetTool:Activate()
+            task.wait(0.15)
+
+            humanoid:UnequipTools()
+        end
+    end
+end
+
+local function depositToATM()
+    local hud = player.PlayerGui:FindFirstChild("HUD")
+    local atmTab = hud and hud:FindFirstChild("Tabs") and hud.Tabs:FindFirstChild("ATM")
+    if not atmTab then return false end
+
+    task.wait(0.4)
+    local amountBox = atmTab:FindFirstChild("AmountBox")
+    local curBal = getBalance()
+    local depositAmt = curBal > 0 and curBal or 1000000
+
+    if amountBox then
+        pcall(function()
+            if amountBox:IsA("TextBox") then
+                amountBox:CaptureFocus()
+                task.wait(0.05)
+                amountBox.Text = tostring(depositAmt)
+                task.wait(0.05)
+                amountBox:ReleaseFocus(true)
+            else
+                amountBox.Text = tostring(depositAmt)
+            end
+        end)
+    end
+    task.wait(0.3)
+
+    local depositBtn = atmTab:FindFirstChild("Deposit")
+    if depositBtn then
+        safeClick(depositBtn)
+    end
+
+    local dStart = tick()
+    while (tick() - dStart < 3.0) and getBalance() >= 1000000 do
+        task.wait(0.2)
+    end
+
+    local closeBtn = atmTab:FindFirstChild("Close")
+    if closeBtn then
+        safeClick(closeBtn)
+    end
+    task.wait(0.4)
+
+    pcall(function()
+        atmTab.Visible = false
+        atmTab.Position = UDim2.new(atmTab.Position.X.Scale, 0, 1, 0)
+    end)
+
+    return true
+end
+
+local function getMakimaInstance()
+    return workspace:FindFirstChild("Ignore") 
+        and workspace.Ignore:FindFirstChild("NPCs") 
+        and workspace.Ignore.NPCs:FindFirstChild("Important NPCs") 
+        and workspace.Ignore.NPCs["Important NPCs"]:FindFirstChild("Makima")
+end
+
+local function getNearestATM(refPos)
+    local atmsFolder = workspace:FindFirstChild("Interactables") and workspace.Interactables:FindFirstChild("ATMs")
+    if not atmsFolder then return nil end
+    
+    local nearest = nil
+    local minDistance = math.huge
+    
+    for _, atm in ipairs(atmsFolder:GetChildren()) do
+        local atmPart = atm:IsA("Model") and (atm.PrimaryPart or atm:FindFirstChildWhichIsA("BasePart")) or (atm:IsA("BasePart") and atm)
+        if atmPart then
+            local dist = (refPos - atmPart.Position).Magnitude
+            if dist < minDistance then
+                minDistance = dist
+                nearest = atm
+            end
+        end
+    end
+    return nearest
+end
+
+local function strictFlyTo(targetPos)
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+
+    local startPos = hrp.Position
+    local distance = (targetPos - startPos).Magnitude
+    if distance < 1 then return end
+
+    local travelTime = distance / Config.Speed
+    local startTime = tick()
+
+    while Config.Enabled do
+        local elapsed = tick() - startTime
+        local alpha = math.clamp(elapsed / travelTime, 0, 1)
+        
+        local currentTargetPos = startPos:Lerp(targetPos, alpha)
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+        hrp.CFrame = CFrame.new(currentTargetPos)
+
+        if alpha >= 1 then break end
+        RunService.RenderStepped:Wait()
+    end
+
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
+end
+
+local function isPatient(npcObj)
+    if not npcObj then return false end
+    local nameLower = npcObj.Name:lower()
+    return string.find(nameLower, "patient") ~= nil
+end
+
+local function talkToMakimaAndClaimJob()
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
+    local hrp = char.HumanoidRootPart
+    
+    local targetCFrame = savedMakimaCFrame or DEFAULT_MAKIMA_CFRAME
+    local realMakima = getMakimaInstance()
+    if realMakima then
+        local mPart = realMakima:IsA("Model") and (realMakima.PrimaryPart or realMakima:FindFirstChild("HumanoidRootPart") or realMakima:FindFirstChildOfClass("BasePart")) or realMakima
+        if mPart then
+            targetCFrame = mPart.CFrame
+            savedMakimaCFrame = mPart.CFrame
+        end
+    end
+    
+    local targetPos = targetCFrame.Position
+    local flightPos = targetPos - Vector3.new(0, 3.5, 0)
+    local risePos = targetPos + Vector3.new(0, 1.5, 0)
+    
+    strictFlyTo(flightPos)
+    if not Config.Enabled then return false end
+    
+    hrp.CFrame = CFrame.new(risePos)
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    
+    local streamWait = tick()
+    while (tick() - streamWait < 2.5) and not getMakimaInstance() do
+        task.wait(0.2)
+    end
+    
+    local dStart = tick()
+    while (tick() - dStart < 6.0) and Config.Enabled and not hasWorkUniform() do
+        local targetNpc = getMakimaInstance() or realMakima
+        if targetNpc then
+            triggerInteraction(targetNpc)
+        end
+        task.wait(0.3)
+        
+        local dialogue = player.PlayerGui:FindFirstChild("HUD") 
+            and player.PlayerGui.HUD:FindFirstChild("Main") 
+            and player.PlayerGui.HUD.Main:FindFirstChild("Dialogue")
+            
+        if dialogue and dialogue.Visible then
+            local skip = dialogue:FindFirstChild("Skip")
+            if skip then
+                safeClick(skip)
+            end
+            task.wait(0.2)
+            
+            local optionsFolder = dialogue:FindFirstChild("Options")
+            if optionsFolder then
+                local jobBtn = optionsFolder:FindFirstChild("1")
+                if not jobBtn then
+                    for _, child in ipairs(optionsFolder:GetChildren()) do
+                        if child:IsA("ImageButton") or child:IsA("TextButton") then
+                            local textLbl = child:FindFirstChildWhichIsA("TextLabel", true)
+                            local text = (textLbl and textLbl.Text or child.Name):lower()
+                            if text:find("hospital") or text:find("help") or text:find("nurse") then
+                                jobBtn = child
+                                break
+                            end
+                        end
+                    end
+                end
+                
+                if jobBtn then
+                    safeClick(jobBtn)
+                    task.wait(0.4)
+                    
+                    local endBtn = optionsFolder:FindFirstChild("1")
+                    if endBtn then
+                        safeClick(endBtn)
+                    end
+                end
+            end
+        end
+        
+        if hasWorkUniform() then
+            break
+        end
+        task.wait(0.4)
+    end
+    
+    hrp.CFrame = CFrame.new(flightPos)
+    useCapItem()
+    return true
+end
+
+-- // ==========================================
+-- // MAIN LOOP THREAD
+-- // ==========================================
+task.spawn(function()
+    local skippedPatients = {}
+
+    RunService.Stepped:Connect(function()
+        if Config.Enabled and player.Character then
+            for _, part in ipairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                    part.AssemblyLinearVelocity = Vector3.zero
+                    part.AssemblyAngularVelocity = Vector3.zero
+                end
+            end
+        end
+    end)
+
+    while true do
+        task.wait(0.1)
+        
+        if Config.Enabled then
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                
+                local currentMakima = getMakimaInstance()
+                if currentMakima then
+                    local mPart = currentMakima:IsA("Model") and (currentMakima.PrimaryPart or currentMakima:FindFirstChild("HumanoidRootPart") or currentMakima:FindFirstChildOfClass("BasePart")) or currentMakima
+                    if mPart then
+                        savedMakimaCFrame = mPart.CFrame
+                    end
+                end
+                
+                local makimaPos = (savedMakimaCFrame or DEFAULT_MAKIMA_CFRAME).Position
+                
+                if (hrp.Position - makimaPos).Magnitude > 1500 then
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                    hrp.AssemblyAngularVelocity = Vector3.zero
+                    strictFlyTo(makimaPos)
+                    task.wait(1.0)
+                    continue
+                end
+                
+                local currentMoney = getBalance()
+                
+                -- PRIORITY 1: Klaim job Makima
+                if needsJobClaim or not hasWorkUniform() then
+                    talkToMakimaAndClaimJob()
+                    needsJobClaim = false
+                    atAtmDepositing = false
+                    task.wait(0.5)
+
+                -- PRIORITY 2: Deposit ke ATM
+                elseif currentMoney >= 1000000 and not atAtmDepositing then
+                    atAtmDepositing = true
+                    
+                    local atmTarget = getNearestATM(makimaPos)
+                    if atmTarget then
+                        local atmPart = atmTarget:IsA("Model") and (atmTarget.PrimaryPart or atmTarget:FindFirstChildWhichIsA("BasePart")) or atmTarget
+                        if atmPart and atmPart:IsA("BasePart") then
+                            local targetPos = atmPart.Position
+                            local flightPos = targetPos - Vector3.new(0, 3.5, 0)
+                            local risePos = targetPos + Vector3.new(0, 1, 0)
+                            
+                            strictFlyTo(flightPos)
+                            
+                            if Config.Enabled then
+                                hrp.CFrame = CFrame.new(risePos)
+                                task.wait(0.3)
+                                
+                                triggerInteraction(atmTarget)
+                                task.wait(0.8)
+                                
+                                depositToATM()
+                                task.wait(0.5)
+                                
+                                needsJobClaim = true
+                                atAtmDepositing = false
+                            end
+                        end
+                    else
+                        atAtmDepositing = false
+                    end
+
+                -- PRIORITY 3: Farm Pasien
+                elseif hasWorkUniform() and currentMoney < 1000000 then
+                    local success, npcsFolder = pcall(function()
+                        return game:GetService("Workspace").Ignore.NPCs.Miscs
+                    end)
+                    
+                    if success and npcsFolder then
+                        local children = npcsFolder:GetChildren()
+                        local validPatients = {}
+                        
+                        for _, child in ipairs(children) do
+                            if isPatient(child) and not skippedPatients[child] then
+                                table.insert(validPatients, child)
+                            end
+                        end
+                        
+                        if #validPatients == 0 then
+                            skippedPatients = {}
+                            for _, child in ipairs(children) do
+                                if isPatient(child) then
+                                    table.insert(validPatients, child)
+                                end
+                            end
+                        end
+                        
+                        local targetPatient = validPatients[1]
+                        
+                        if targetPatient then
+                            local patientPart = targetPatient:IsA("Model") and (targetPatient.PrimaryPart or targetPatient:FindFirstChild("HumanoidRootPart") or targetPatient:FindFirstChildOfClass("BasePart")) or targetPatient
+                            
+                            if patientPart and patientPart:IsA("BasePart") then
+                                local targetPos = patientPart.Position
+                                local flightPos = targetPos - Vector3.new(0, 3.5, 0)
+                                
+                                strictFlyTo(flightPos)
+                                
+                                if Config.Enabled then
+                                    local risePos = targetPos - Vector3.new(0, 8, 0)
+                                    hrp.CFrame = CFrame.new(risePos)
+                                    
+                                    task.wait(0.1)
+                                    
+                                    if Config.Enabled then
+                                        triggerInteraction(targetPatient)
+                                        
+                                        local startTime = tick()
+                                        local collected = false
+                                        
+                                        while Config.Enabled and targetPatient.Parent ~= nil and (tick() - startTime < 2) do
+                                            hrp.CFrame = CFrame.new(risePos)
+                                            
+                                            if not targetPatient:IsDescendantOf(npcsFolder) then
+                                                collected = true
+                                                break
+                                            end
+                                            
+                                            RunService.RenderStepped:Wait()
+                                        end
+                                        
+                                        if not collected and targetPatient.Parent ~= nil then
+                                            skippedPatients[targetPatient] = true
+                                        end
+                                        
+                                        hrp.CFrame = CFrame.new(flightPos)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
